@@ -1,33 +1,46 @@
+from django.contrib.auth import get_user_model
+
 from rest_framework import serializers
-from django.contrib.auth.models import User
+
+from .models import *
+
+
+User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(max_length=65,
-                                     min_length=8,
-                                     write_only=True)
-    email = serializers.EmailField()
-    first_name = serializers.CharField(max_length=100)
-    last_name = serializers.CharField(max_length=100)
-
     class Meta:
         model = User
-        fields = ['username', 'password', 'email', 'first_name', 'last_name']
+        fields = ('username', 'email', 'password')
+        extra_kwargs = {'password': {'write_only': True}}
 
-    def validate(self, attrs):
-        email = attrs.get('email', '')
-        if User.objects.filter(email=email).exists():
-            raise serializers.ValidationError({'email': 'Email is already in use'})
-        return super().validate(attrs)
-
-    def create(self, validated_data):
-        return User.objects.create_user(**validated_data)
+        def create(self, validated_data):
+            password = validated_data.pop('password')
+            user_obj = User(**validated_data)
+            user_obj.set_password(password)
+            user_obj.save()
+            return user_obj
 
 
-class LoginSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(max_length=255)
-    password = serializers.CharField(max_length=65)
-
+class ListUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['username', 'password']
+        fields = ('id', 'username', 'email', 'password')
+
+
+class UpdateUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'password')
+
+
+class CurrencySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Currency
+        fields = ['id', 'code', 'name', 'is_active']
+
+
+class ItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Item
+        fields = ['code', 'name', 'actual_price', 'currency', 'details', 'logo', 'is_active']

@@ -1,50 +1,58 @@
-from rest_framework.generics import GenericAPIView
-from .serializers import UserSerializer, LoginSerializer
-from rest_framework.response import Response
 from rest_framework import status
-from django.conf import settings
-from django.contrib import auth
-import jwt
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
+from .models import *
+from .serializers import *
 
 
-class RegisterView(GenericAPIView):
-    serializer_class = UserSerializer
+class CurrencyTable(APIView):
+    permission_classes = (IsAuthenticated, )
 
-    def post(self, request):
-        serializer = UserSerializer(data=request.data)
+    def get(self, request, *args, **kwargs):
+        curobj = Currency.objects.all()
+        serializer = CurrencySerializer(curobj, many=True)
+        return Response(serializer.data)
 
+    def post(self, request, *args, **kwargs):
+        serializer = CurrencySerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def delete(self, request, *args, **kwargs):
+        curobj = Currency.objects.all()
+        curobj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-class LoginView(GenericAPIView):
-    serializer_class = LoginSerializer
 
-    def post(self, request):
-        data = request.data
-        username = data.get('username', '')
-        password = data.get('password', '')
-        user = auth.authenticate(username=username, password=password)
+class CurrencyUpdateDelete(APIView):
+    permission_classes = (IsAdminUser, )
 
-        if user:
+    def get_object(self, id, *args, **kwargs):
+        try:
+            return Currency.objects.get(id=id)
+        except Currency.DoesNotExist:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
-            auth_token = jwt.encode({
-                'username': user.username,
-            }, settings.SECRET_KEY)
+    def get(self, request, id, *args, **kwargs):
+        curobj = self.get_object(id)
+        serializer = CurrencySerializer(curobj)
+        return Response(serializer.data)
 
-            serializer = UserSerializer(user)
+    def put(self, request, id, *args, **kwargs):
+        curobj = self.get_object(id)
+        serializer = CurrencySerializer(curobj, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            data = {
-                'user': serializer.data,
-                'token': auth_token,
-            }
+    def delete(self, request, id, *args, **kwargs):
+        curobj = self.get_object(id)
+        curobj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-            return Response(data, status=status.HTTP_200_OK)
-
-        return Response({
-            'detail': 'Invalid credentials'
-        }, status=status.HTTP_401_UNAUTHORIZED)
 
