@@ -1,7 +1,6 @@
 # drf-sharesproject
 
-- /user/register
-- /user/login
+- /user/
 
 ***
 - /api/v1/
