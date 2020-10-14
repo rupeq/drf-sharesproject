@@ -9,6 +9,9 @@ class Currency(models.Model):
 
     is_active = models.BooleanField(default=True)
 
+    def __str__(self):
+        return {self.name}
+
 
 class Item(models.Model):
 
@@ -23,6 +26,9 @@ class Item(models.Model):
     currency = models.ForeignKey(Currency, blank=True, null=True, on_delete=models.SET_NULL)
 
     details = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return {self.name}
 
 
 class WatchList(models.Model):

@@ -14,12 +14,12 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('username', 'email', 'password')
         extra_kwargs = {'password': {'write_only': True}}
 
-        def create(self, validated_data):
-            password = validated_data.pop('password')
-            user_obj = User(**validated_data)
-            user_obj.set_password(password)
-            user_obj.save()
-            return user_obj
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        user_obj = User(**validated_data)
+        user_obj.set_password(password)
+        user_obj.save()
+        return user_obj
 
 
 class ListUserSerializer(serializers.ModelSerializer):
@@ -44,3 +44,9 @@ class ItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Item
         fields = ['code', 'name', 'actual_price', 'currency', 'details', 'logo', 'is_active']
+
+
+class FavoriteListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WatchList
+        fields = ['item', 'user']

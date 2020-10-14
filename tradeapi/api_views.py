@@ -1,58 +1,51 @@
 from rest_framework import status
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
-from rest_framework.views import APIView
+from rest_framework import viewsets, mixins
 from rest_framework.response import Response
 
 from .models import *
 from .serializers import *
 
 
-class CurrencyTable(APIView):
+class ItemsView(mixins.ListModelMixin,
+                mixins.CreateModelMixin,
+                mixins.RetrieveModelMixin,
+                mixins.UpdateModelMixin,
+                viewsets.GenericViewSet):
+    queryset = Item.objects.all()
+    serializer_class = ItemSerializer
+
+class FavoriteList(mixins.ListModelMixin,
+                   mixins.CreateModelMixin,
+                   mixins.RetrieveModelMixin,
+                   mixins.UpdateModelMixin,
+                   viewsets.GenericViewSet):
+    queryset = WatchList.objects.all()
+    serializer_class = FavoriteListSerializer
+
     permission_classes = (IsAuthenticated, )
 
-    def get(self, request, *args, **kwargs):
-        curobj = Currency.objects.all()
-        serializer = CurrencySerializer(curobj, many=True)
-        return Response(serializer.data)
+    def create(self, request, *args, **kwargs):
+        user_id = request.data.get('user_id')
+        user = User.objects.get(pk=user_id)
+        item = request.data.get('item')
+        favobj = WatchList(user=user, item=item)
+        favobj.save()
+        return Response(status=status.HTTP_201_CREATED)
 
-    def post(self, request, *args, **kwargs):
-        serializer = CurrencySerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, *args, **kwargs):
-        curobj = Currency.objects.all()
-        curobj.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    def list(self, request, *args, **kwargs):
+        user_id = kwargs.get('pk')
+        qs = self.queryset.filter(user=user_id)
+        if qs:
+            serializer = self.serializer_class(qs, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class CurrencyUpdateDelete(APIView):
-    permission_classes = (IsAdminUser, )
 
-    def get_object(self, id, *args, **kwargs):
-        try:
-            return Currency.objects.get(id=id)
-        except Currency.DoesNotExist:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
 
-    def get(self, request, id, *args, **kwargs):
-        curobj = self.get_object(id)
-        serializer = CurrencySerializer(curobj)
-        return Response(serializer.data)
 
-    def put(self, request, id, *args, **kwargs):
-        curobj = self.get_object(id)
-        serializer = CurrencySerializer(curobj, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, id, *args, **kwargs):
-        curobj = self.get_object(id)
-        curobj.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
