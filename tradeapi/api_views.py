@@ -1,10 +1,13 @@
-from rest_framework import status
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
-from rest_framework import viewsets, mixins
-from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
 
-from .models import *
-from .serializers import *
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import viewsets, mixins
+
+from tradeapi.models import Item, WatchList, Offer, Inventory
+from tradeapi.serializers import ItemSerializer, \
+                                    FavoriteCreateSerializer, \
+                                        InventoryListSerializer, \
+                                            OfferCreateSerializer, OfferListSerializer
 
 
 class ItemsView(mixins.ListModelMixin,
@@ -15,36 +18,57 @@ class ItemsView(mixins.ListModelMixin,
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
 
+
 class FavoriteList(mixins.ListModelMixin,
                    mixins.CreateModelMixin,
-                   mixins.RetrieveModelMixin,
-                   mixins.UpdateModelMixin,
                    viewsets.GenericViewSet):
-    queryset = WatchList.objects.all()
-    serializer_class = FavoriteListSerializer
+    default_serializer_class = FavoriteCreateSerializer
 
     permission_classes = (IsAuthenticated, )
 
-    def create(self, request, *args, **kwargs):
-        user_id = request.data.get('user_id')
-        user = User.objects.get(pk=user_id)
-        item = request.data.get('item')
-        favobj = WatchList(user=user, item=item)
-        favobj.save()
-        return Response(status=status.HTTP_201_CREATED)
+    def get_serializer(self, *args, **kwargs):
+        return self.default_serializer_class
 
-    def list(self, request, *args, **kwargs):
-        user_id = kwargs.get('pk')
-        qs = self.queryset.filter(user=user_id)
-        if qs:
-            serializer = self.serializer_class(qs, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            return Response(status=status.HTTP_204_NO_CONTENT)
+    def perform_create(self, serializer):
+        item = get_object_or_404(Item, id=self.request.data.get('item'))
+        serializer.save(item=item, user=self.request.user)
+        return serializer.data
+
+    def get_queryset(self):
+        return WatchList.objects.filter(user=self.request.user)
 
 
+class InventoryList(mixins.ListModelMixin,
+                    viewsets.GenericViewSet):
+    serializer_class = InventoryListSerializer
+
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        user = self.request.user
+        return Inventory.objects.filter(user=user)
 
 
+class OfferList(mixins.ListModelMixin,
+                mixins.CreateModelMixin,
+                mixins.DestroyModelMixin,
+                viewsets.GenericViewSet):
+    queryset = Offer.objects.all()
+    default_serializer_class = OfferListSerializer
+
+    permission_classes = (IsAuthenticated, )
+
+    serializer_classes_by_action = {
+        "list": OfferListSerializer,
+        "create": OfferCreateSerializer,
+        "destroy": OfferListSerializer
+    }
+
+    def get_serializer_class(self):
+        return self.serializer_classes_by_action.get(self.action, self.default_serializer_class)
+
+    def get_queryset(self):
+        return Offer.objects.filter(is_active=True)
 
 
 
