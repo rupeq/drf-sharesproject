@@ -90,6 +90,11 @@ class OfferCreateSerializer(serializers.ModelSerializer):
         item.save()
         return offer
 
+class OfferUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Offer
+        fields = ['item', 'quantity', 'entry_quantity', 'order_type', 'transaction_type', 'price']
+
 
 class InventoryListSerializer(serializers.ModelSerializer):
     item = ItemSerializer()

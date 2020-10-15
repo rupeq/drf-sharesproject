@@ -7,7 +7,7 @@ from tradeapi.models import Item, WatchList, Offer, Inventory
 from tradeapi.serializers import ItemSerializer, \
                                     FavoriteCreateSerializer, \
                                         InventoryListSerializer, \
-                                            OfferCreateSerializer, OfferListSerializer
+                                            OfferCreateSerializer, OfferListSerializer, OfferUpdateSerializer
 
 
 class ItemsView(mixins.ListModelMixin,
@@ -51,7 +51,7 @@ class InventoryList(mixins.ListModelMixin,
 
 class OfferList(mixins.ListModelMixin,
                 mixins.CreateModelMixin,
-                mixins.DestroyModelMixin,
+                mixins.UpdateModelMixin,
                 viewsets.GenericViewSet):
     queryset = Offer.objects.all()
     default_serializer_class = OfferListSerializer
@@ -61,7 +61,7 @@ class OfferList(mixins.ListModelMixin,
     serializer_classes_by_action = {
         "list": OfferListSerializer,
         "create": OfferCreateSerializer,
-        "destroy": OfferListSerializer
+        "update": OfferUpdateSerializer
     }
 
     def get_serializer_class(self):
