@@ -2,6 +2,17 @@ from django.contrib.auth.models import User
 from django.db import models
 
 
+OrderType = {
+    1: "OP_BUY",
+    2: "OP_SELL",
+}
+
+TransactionType = {
+    1: "Payment",
+    2: "Credit",
+}
+
+
 class Currency(models.Model):
 
     code = models.CharField(max_length=8, unique=True)
@@ -32,8 +43,9 @@ class Item(models.Model):
 
 
 class WatchList(models.Model):
+
     user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
-    item = models.ForeignKey(Item, blank=True, null=True,on_delete=models.SET_NULL)
+    item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL)
 
     class Meta:
         unique_together = ('user', 'item')
@@ -43,6 +55,7 @@ class WatchList(models.Model):
 
 
 class Price(models.Model):
+
     item = models.ForeignKey(Item, null=True, on_delete=models.SET_NULL)
     currency = models.ForeignKey(Currency, blank=True, null=True, on_delete=models.SET_NULL)
 
@@ -53,21 +66,12 @@ class Price(models.Model):
 
 
 class Offer(models.Model):
+
     user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
-    item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL)
+    item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL, related_name='offer')
 
     entry_quantity = models.IntegerField()
     quantity = models.IntegerField()
-
-    OrderType = {
-        1: "OP_BUY",
-        2: "OP_SELL",
-    }
-
-    TransactionType = {
-        1: "Payment",
-        2: "Credit",
-    }
 
     order_type = models.PositiveSmallIntegerField(choices=OrderType.items())
     transaction_type = models.PositiveSmallIntegerField(choices=TransactionType.items())
@@ -81,6 +85,7 @@ class Offer(models.Model):
 
 
 class Trade(models.Model):
+
     item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL)
     seller = models.ForeignKey(
         User,
@@ -100,11 +105,6 @@ class Trade(models.Model):
     )
     quantity = models.IntegerField()
     unit_price = models.DecimalField(max_digits=7, decimal_places=2)
-
-    OrderType = {
-        1: "OP_BUY",
-        2: "OP_SELL",
-    }
 
     trade_type = models.PositiveSmallIntegerField(choices=OrderType.items())
 
@@ -132,11 +132,13 @@ class Trade(models.Model):
 
 
 class Inventory(models.Model):
+
     user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL, related_name='inventory')
     item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL)
 
     quantity = models.IntegerField()
     reserved_quantity = models.IntegerField()
+    money = models.DecimalField(decimal_places=2, max_digits=7)
 
     class Meta:
         db_table = 'inventory'

@@ -3,11 +3,24 @@ from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets, mixins
 
-from tradeapi.models import Item, WatchList, Offer, Inventory
-from tradeapi.serializers import ItemSerializer, \
-                                    FavoriteCreateSerializer, \
-                                        InventoryListSerializer, \
-                                            OfferCreateSerializer, OfferListSerializer, OfferUpdateSerializer
+from tradeapi.models import Item, WatchList, Offer, Inventory, Trade, Currency
+from tradeapi.serializers import (ItemSerializer,
+                                  CurrencySerializer,
+                                  FavoriteCreateSerializer,
+                                  InventoryListSerializer,
+                                  OfferCreateSerializer,
+                                  OfferListSerializer,
+                                  OfferUpdateSerializer,
+                                  TradeSerializer)
+
+
+class CurrencyView(mixins.ListModelMixin,
+                   mixins.CreateModelMixin,
+                   mixins.RetrieveModelMixin,
+                   mixins.UpdateModelMixin,
+                   viewsets.GenericViewSet):
+    queryset = Currency.objects.all()
+    serializer_class = CurrencySerializer
 
 
 class ItemsView(mixins.ListModelMixin,
@@ -53,7 +66,6 @@ class OfferList(mixins.ListModelMixin,
                 mixins.CreateModelMixin,
                 mixins.UpdateModelMixin,
                 viewsets.GenericViewSet):
-    queryset = Offer.objects.all()
     default_serializer_class = OfferListSerializer
 
     permission_classes = (IsAuthenticated, )
@@ -71,5 +83,13 @@ class OfferList(mixins.ListModelMixin,
         return Offer.objects.filter(is_active=True)
 
 
+class TradeList(mixins.ListModelMixin,
+                viewsets.GenericViewSet):
 
+    serializer_class = TradeSerializer
+    queryset = Trade.objects.all()
 
+    # filter_backends = (DjangoFilterBackend, )
+    # filterset_fields = ('seller', 'buyer')
+
+    permission_classes = (IsAuthenticated, )

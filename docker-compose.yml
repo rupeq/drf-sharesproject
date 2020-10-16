@@ -5,10 +5,11 @@ services:
     image: postgres
     container_name: postgres_db
     env_file:
-      - db_keys.txt
+      - db_keys.env
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data/
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/code
     ports:
