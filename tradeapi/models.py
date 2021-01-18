@@ -30,18 +30,18 @@ class Currency(StockBase):
 
 class Item(StockBase):
 
-    price = models.DecimalField(max_digits=7, decimal_places=2, blank=True, null=True)
-    currency = models.ForeignKey(Currency, blank=True, null=True, on_delete=models.SET_NULL, related_name="item")
+    cost = models.DecimalField(max_digits=7, decimal_places=2, blank=True, null=True)
+    currency = models.ForeignKey(Currency, blank=True, null=True, on_delete=models.SET_NULL)
     details = models.TextField("Details", blank=True, null=True, max_length=512)
 
     def __str__(self):
-        return f"{self.id} - {self.name} - {self.price}{self.currency}"
+        return f"{self.id} - {self.name} - {self.cost}{self.currency}"
 
 
 class WatchList(models.Model):
 
-    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL, related_name="watchlist")
-    item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL, related_name="watchlist")
+    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
+    item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL)
 
     class Meta:
         unique_together = ('user', 'item')
@@ -52,8 +52,8 @@ class WatchList(models.Model):
 
 class Price(models.Model):
 
-    item = models.ForeignKey(Item, null=True, on_delete=models.SET_NULL, related_name="prices")
-    currency = models.ForeignKey(Currency, blank=True, null=True, on_delete=models.SET_NULL, related_name="price")
+    item = models.ForeignKey(Item, null=True, on_delete=models.SET_NULL)
+    currency = models.ForeignKey(Currency, blank=True, null=True, on_delete=models.SET_NULL)
 
     price = models.DecimalField(max_digits=7, decimal_places=2)
     date = models.DateTimeField(unique=True, blank=True, null=True)
@@ -61,7 +61,7 @@ class Price(models.Model):
 
 class Offer(models.Model):
 
-    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL, related_name="offer")
+    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
     item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL, related_name='offer')
 
     entry_quantity = models.IntegerField("Requested quantity")
@@ -77,7 +77,7 @@ class Offer(models.Model):
 
 class Trade(models.Model):
 
-    item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL, related_name="trade")
+    item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL)
     seller = models.ForeignKey(
         User,
         blank=True,
@@ -123,7 +123,7 @@ class Trade(models.Model):
 class Inventory(models.Model):
 
     user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL, related_name='inventory')
-    item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL, related_name="inventory")
+    item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL)
 
     quantity = models.IntegerField()
 
@@ -137,8 +137,8 @@ class Inventory(models.Model):
 
 class Wallet(models.Model):
 
-    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL, related_name='wallet')
-    currency = models.ForeignKey(Currency, blank=True, null=True, on_delete=models.SET_NULL, related_name="wallet")
+    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL, related_name="wallet")
+    currency = models.ForeignKey(Currency, blank=True, null=True, on_delete=models.SET_NULL)
 
     money = models.DecimalField(max_digits=7, decimal_places=2, blank=True, null=True)
 

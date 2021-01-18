@@ -1,5 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.forms import ValidationError
 from django.shortcuts import get_object_or_404
 
 from rest_framework import serializers
@@ -53,7 +52,7 @@ class ItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Item
-        fields = ('code', 'name', 'currency', 'details', 'price')
+        fields = ('code', 'name', 'currency', 'details', 'cost')
 
 
 class FavoriteListSerializer(serializers.ModelSerializer):

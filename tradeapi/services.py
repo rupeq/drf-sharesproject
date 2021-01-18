@@ -1,9 +1,9 @@
 from django.shortcuts import get_object_or_404
 
-from .models import Offer, Inventory, Wallet, Trade
+from .models import Inventory, Wallet, Trade, Offer
 
 
-def trade(buyer_offer, seller_offer):
+def trade(buyer_offer: Offer, seller_offer: Offer):
     seller = seller_offer.user
     item = seller_offer.item
     buyer = buyer_offer.user
