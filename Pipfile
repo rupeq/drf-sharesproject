@@ -16,6 +16,7 @@ drf-yasg = "*"
 djangorestframework-simplejwt = "*"
 django-filter = "*"
 celery = "*"
+redis = "*"
 
 [requires]
 python_version = "3.8"

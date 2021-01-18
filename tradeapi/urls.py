@@ -7,7 +7,8 @@ from .api_views import (ItemsView,
                         FavoriteList,
                         InventoryList,
                         OfferList,
-                        TradeList)
+                        TradeList,
+                        WalletList)
 
 
 router = DefaultRouter()
@@ -17,6 +18,7 @@ router.register(r'watchlist', FavoriteList, basename="favorite")
 router.register(r'offers', OfferList, basename="offers")
 router.register(r'inventory', InventoryList, basename='inventory')
 router.register(r'trade', TradeList, basename='trade')
+router.register(r'wallet', WalletList, basename='wallet')
 
 
 urlpatterns = [

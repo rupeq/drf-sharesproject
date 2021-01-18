@@ -3,15 +3,17 @@ from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets, mixins
 
-from tradeapi.models import Item, WatchList, Offer, Inventory, Trade, Currency
+from tradeapi.models import Item, WatchList, Offer, Inventory, Trade, Currency, Wallet
 from tradeapi.serializers import (ItemSerializer,
                                   CurrencySerializer,
+                                  FavoriteListSerializer,
                                   FavoriteCreateSerializer,
                                   InventoryListSerializer,
                                   OfferCreateSerializer,
                                   OfferListSerializer,
                                   OfferUpdateSerializer,
-                                  TradeSerializer)
+                                  TradeSerializer,
+                                  WalletSerializer)
 
 
 class CurrencyView(mixins.ListModelMixin,
@@ -32,20 +34,24 @@ class ItemsView(mixins.ListModelMixin,
     serializer_class = ItemSerializer
 
 
-class FavoriteList(mixins.ListModelMixin,
-                   mixins.CreateModelMixin,
+class FavoriteList(viewsets.mixins.CreateModelMixin,
+                   viewsets.mixins.ListModelMixin,
+                   viewsets.mixins.RetrieveModelMixin,
+                   viewsets.mixins.DestroyModelMixin,
                    viewsets.GenericViewSet):
-    default_serializer_class = FavoriteCreateSerializer
+    default_serializer_class = FavoriteListSerializer
+
+    serializer_classes_by_action = {
+        "list": FavoriteListSerializer,
+        "create": FavoriteCreateSerializer,
+        "update": FavoriteCreateSerializer,
+        "retrieve": FavoriteListSerializer
+    }
 
     permission_classes = (IsAuthenticated, )
 
-    def get_serializer(self, *args, **kwargs):
-        return self.default_serializer_class
-
-    def perform_create(self, serializer):
-        item = get_object_or_404(Item, id=self.request.data.get('item'))
-        serializer.save(item=item, user=self.request.user)
-        return serializer.data
+    def get_serializer_class(self):
+        return self.serializer_classes_by_action.get(self.action, self.default_serializer_class)
 
     def get_queryset(self):
         return WatchList.objects.filter(user=self.request.user)
@@ -89,7 +95,13 @@ class TradeList(mixins.ListModelMixin,
     serializer_class = TradeSerializer
     queryset = Trade.objects.all()
 
-    # filter_backends = (DjangoFilterBackend, )
-    # filterset_fields = ('seller', 'buyer')
-
     permission_classes = (IsAuthenticated, )
+
+
+class WalletList(mixins.ListModelMixin,
+             viewsets.GenericViewSet):
+
+    serializer_class = WalletSerializer
+
+    def get_queryset(self):
+        return Wallet.objects.filter(user=self.request.user)

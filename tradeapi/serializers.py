@@ -1,7 +1,9 @@
 from django.contrib.auth import get_user_model
+from django.forms import ValidationError
 from django.shortcuts import get_object_or_404
 
 from rest_framework import serializers
+
 
 from .models import *
 from .enum import OrderTypeEnum
@@ -42,7 +44,7 @@ class CurrencySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Currency
-        fields = ('id', 'code', 'name', 'is_active')
+        fields = ('id', 'code', 'name')
 
 
 class ItemSerializer(serializers.ModelSerializer):
@@ -51,17 +53,32 @@ class ItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Item
-        fields = ('code', 'name', 'actual_price', 'currency', 'details', 'logo', 'is_active')
+        fields = ('code', 'name', 'currency', 'details', 'price')
 
 
-class FavoriteCreateSerializer(serializers.ModelSerializer):
+class FavoriteListSerializer(serializers.ModelSerializer):
 
-    item = serializers.IntegerField(required=True)
+    item = ItemSerializer()
 
     class Meta:
         model = WatchList
         fields = ('item', 'user')
         extra_kwargs = {'user': {'read_only': True}}
+
+
+class FavoriteCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = WatchList
+        fields = ('item', 'user')
+        extra_kwargs = {'user': {'read_only': True}}
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        watchlist = WatchList(user=user, **validated_data)
+        watchlist.save()
+
+        return watchlist
 
 
 class OfferListSerializer(serializers.ModelSerializer):
@@ -78,36 +95,35 @@ class OfferCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Offer
-        fields = ('item', 'quantity', 'entry_quantity', 'order_type', 'transaction_type', 'price')
+        fields = ('item', 'entry_quantity', 'order_type', 'price')
 
     def create(self, validated_data):
 
-        user = None
-        request = self.context.get("request")
-        if request and hasattr(request, "user"):
-            user = request.user
+        user = self.context["request"].user
+        item = validated_data.get("item")
+        inventory = get_object_or_404(Inventory, user=user, item=item)
+        wallet = get_object_or_404(Wallet, user=user)
 
-        item = get_object_or_404(Inventory, user=user, item=validated_data.get('item'))
-        order = validated_data.get('order_type')
-        transaction = validated_data.get('transaction_type')
+        order_type = validated_data.get('order_type')
         entry_quantity = validated_data.get('entry_quantity')
-        price = validated_data.get('prices')
+        price = validated_data.get('price')
 
-        if order == OrderTypeEnum.OP_SELL.value:
-            if item.quantity - item.reserved_quantity < entry_quantity:
-                return
-            item.reserved_quantity += entry_quantity
-        elif order == OrderTypeEnum.OP_BUY.value:
-            if price * entry_quantity > item.money:
-                return
-            item.money -= price * entry_quantity
+        if order_type == OrderTypeEnum.OP_SELL.value:
+            if inventory.quantity < entry_quantity:
+                raise serializers.ValidationError("Inventory quantity less than entry quantity")
+            inventory.quantity -= entry_quantity
+        elif order_type == OrderTypeEnum.OP_BUY.value:
+            if price * entry_quantity > wallet.money:
+                raise serializers.ValidationError("Price great than wallet money")
+            wallet.money -= price
 
-        validated_data['quantity'] = entry_quantity
+        validated_data['quantity'] = inventory.quantity
         validated_data['user'] = user
 
         offer = Offer(**validated_data)
         offer.save()
-        item.save()
+        inventory.save()
+        wallet.save()
 
         return offer
 
@@ -138,4 +154,11 @@ class TradeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Trade
+        fields = "__all__"
+
+
+class WalletSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Wallet
         fields = "__all__"

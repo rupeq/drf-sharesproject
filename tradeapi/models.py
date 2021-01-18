@@ -7,77 +7,68 @@ OrderType = {
     2: "OP_SELL",
 }
 
-TransactionType = {
-    1: "Payment",
-    2: "Credit",
-}
 
+class StockBase(models.Model):
+    code = models.CharField("Code", max_length=8, unique=True)
+    name = models.CharField("Name", max_length=128, unique=True)
 
-class Currency(models.Model):
-
-    code = models.CharField(max_length=8, unique=True)
-    name = models.CharField(max_length=128, unique=True)
-
-    is_active = models.BooleanField(default=True)
+    class Meta:
+        abstract = True
 
     def __str__(self):
         return self.name
 
 
-class Item(models.Model):
+class Currency(StockBase):
+    def __str__(self):
+        return self.code
 
-    code = models.CharField(max_length=8, unique=True)
-    name = models.CharField(max_length=128, unique=True)
-    logo = models.URLField(max_length=200)
+    class Meta:
+        verbose_name = "Currency"
+        verbose_name_plural = "Currencies"
 
-    actual_price = models.IntegerField(blank=True, null=True)
 
-    is_active = models.BooleanField(default=True)
+class Item(StockBase):
 
-    currency = models.ForeignKey(Currency, blank=True, null=True, on_delete=models.SET_NULL)
-
-    details = models.TextField(blank=True, null=True)
+    price = models.DecimalField(max_digits=7, decimal_places=2, blank=True, null=True)
+    currency = models.ForeignKey(Currency, blank=True, null=True, on_delete=models.SET_NULL, related_name="item")
+    details = models.TextField("Details", blank=True, null=True, max_length=512)
 
     def __str__(self):
-        return self.name
+        return f"{self.id} - {self.name} - {self.price}{self.currency}"
 
 
 class WatchList(models.Model):
 
-    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
-    item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL, related_name="watchlist")
+    item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL, related_name="watchlist")
 
     class Meta:
         unique_together = ('user', 'item')
 
     def __str__(self):
-        return self.item
+        return f"{self.user} - {self.item}"
 
 
 class Price(models.Model):
 
-    item = models.ForeignKey(Item, null=True, on_delete=models.SET_NULL)
-    currency = models.ForeignKey(Currency, blank=True, null=True, on_delete=models.SET_NULL)
+    item = models.ForeignKey(Item, null=True, on_delete=models.SET_NULL, related_name="prices")
+    currency = models.ForeignKey(Currency, blank=True, null=True, on_delete=models.SET_NULL, related_name="price")
 
     price = models.DecimalField(max_digits=7, decimal_places=2)
-
-    buy = models.DecimalField(max_digits=7, decimal_places=2, blank=True, null=True)
-    sell = models.DecimalField(max_digits=7, decimal_places=2, blank=True, null=True)
+    date = models.DateTimeField(unique=True, blank=True, null=True)
 
 
 class Offer(models.Model):
 
-    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL, related_name="offer")
     item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL, related_name='offer')
 
-    entry_quantity = models.IntegerField()
-    quantity = models.IntegerField()
+    entry_quantity = models.IntegerField("Requested quantity")
+    quantity = models.IntegerField("Current quantity")
 
     order_type = models.PositiveSmallIntegerField(choices=OrderType.items())
-    transaction_type = models.PositiveSmallIntegerField(choices=TransactionType.items())
-
-    price = models.DecimalField(max_digits=7, decimal_places=2, blank=True, null=True)
-
+    price = models.DecimalField(max_digits=7, decimal_places=2)
     is_active = models.BooleanField(default=True)
 
     def __str__(self):
@@ -86,7 +77,7 @@ class Offer(models.Model):
 
 class Trade(models.Model):
 
-    item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL)
+    item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL, related_name="trade")
     seller = models.ForeignKey(
         User,
         blank=True,
@@ -103,11 +94,9 @@ class Trade(models.Model):
         related_name='buyer_trade',
         related_query_name='buyer_trade',
     )
+
     quantity = models.IntegerField()
     unit_price = models.DecimalField(max_digits=7, decimal_places=2)
-
-    trade_type = models.PositiveSmallIntegerField(choices=OrderType.items())
-
     description = models.TextField(blank=True, null=True)
 
     buyer_offer = models.ForeignKey(
@@ -134,11 +123,9 @@ class Trade(models.Model):
 class Inventory(models.Model):
 
     user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL, related_name='inventory')
-    item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL)
+    item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.SET_NULL, related_name="inventory")
 
     quantity = models.IntegerField()
-    reserved_quantity = models.IntegerField()
-    money = models.DecimalField(decimal_places=2, max_digits=7)
 
     class Meta:
         db_table = 'inventory'
@@ -146,3 +133,14 @@ class Inventory(models.Model):
 
     def __str__(self):
         return f"User - {self.user}, Item {self.item}"
+
+
+class Wallet(models.Model):
+
+    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL, related_name='wallet')
+    currency = models.ForeignKey(Currency, blank=True, null=True, on_delete=models.SET_NULL, related_name="wallet")
+
+    money = models.DecimalField(max_digits=7, decimal_places=2, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.user} - {self.money}{self.currency}"

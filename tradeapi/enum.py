@@ -5,9 +5,3 @@ class OrderTypeEnum(IntEnum):
 
     OP_BUY = 1
     OP_SELL = 2
-
-
-class TransactionTypeEnum(IntEnum):
-
-    Payment = 1
-    Credit = 2

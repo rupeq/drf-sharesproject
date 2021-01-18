@@ -12,9 +12,9 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 
 app.autodiscover_tasks()
 
-app.conf.beat_shedule = {
-    "get_trade": {
-        "task": "tradeapi.worker.get_trade",
-        "schedule": 60,
+app.conf.beat_schedule = {
+    "trade": {
+        "task": "tradeapi.tasks.get_trade",
+        "schedule": 15,
     }
 }
