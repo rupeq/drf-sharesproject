@@ -10,6 +10,8 @@ COPY Pipfile Pipfile.lock /code/
 RUN pipenv install --system
 
 COPY entrypoint.sh /code/
-RUN chmod +x entrypoint.sh
+RUN chmod 755 /code/entrypoint.sh
 
 RUN pip3 install -r requirements.txt
+
+CMD ["bash", "/code/entrypoint.sh"]

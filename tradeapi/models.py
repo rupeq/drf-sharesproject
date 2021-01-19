@@ -72,7 +72,7 @@ class Offer(models.Model):
     is_active = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"Offer from {self.user}, item - {self.item}"
+        return f"Offer from {self.user}, item - {self.item}, {self.entry_quantity}"
 
 
 class Trade(models.Model):
@@ -132,7 +132,7 @@ class Inventory(models.Model):
         unique_together = ('user', 'item')
 
     def __str__(self):
-        return f"User - {self.user}, Item {self.item}"
+        return f"User - {self.user}, Item {self.item} - {self.quantity}"
 
 
 class Wallet(models.Model):

@@ -22,6 +22,7 @@ class UserSerializer(serializers.ModelSerializer):
         user_obj = User(**validated_data)
         user_obj.set_password(password)
         user_obj.save()
+        _ = Wallet.objects.create(user=user_obj)
         return user_obj
 
 
@@ -100,7 +101,8 @@ class OfferCreateSerializer(serializers.ModelSerializer):
 
         user = self.context["request"].user
         item = validated_data.get("item")
-        inventory = get_object_or_404(Inventory, user=user, item=item)
+
+        inventory = Inventory.objects.get_or_create(user=user, item=item)
         wallet = get_object_or_404(Wallet, user=user)
 
         order_type = validated_data.get('order_type')
@@ -110,14 +112,13 @@ class OfferCreateSerializer(serializers.ModelSerializer):
         if order_type == OrderTypeEnum.OP_SELL.value:
             if inventory.quantity < entry_quantity:
                 raise serializers.ValidationError("Inventory quantity less than entry quantity")
-            inventory.quantity -= entry_quantity
         elif order_type == OrderTypeEnum.OP_BUY.value:
             if price * entry_quantity > wallet.money:
                 raise serializers.ValidationError("Price great than wallet money")
-            wallet.money -= price
 
         validated_data['quantity'] = inventory.quantity
         validated_data['user'] = user
+        validated_data['entry_quantity'] = entry_quantity
 
         offer = Offer(**validated_data)
         offer.save()
@@ -144,12 +145,6 @@ class InventoryListSerializer(serializers.ModelSerializer):
 
 
 class TradeSerializer(serializers.ModelSerializer):
-
-    item = ItemSerializer()
-    buy = UserSerializer()
-    sell = UserSerializer()
-    buy_offer = OfferListSerializer()
-    sell_offer = OfferListSerializer()
 
     class Meta:
         model = Trade

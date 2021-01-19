@@ -13,7 +13,7 @@ services:
     volumes:
       - .:/code
     ports:
-      - "8001:8001"
+      - "8000:8000"
     depends_on:
       - db
       - redis
@@ -36,14 +36,6 @@ services:
       - db
     env_file:
       - db_keys.env
-  celery-beat:
-    build: .
-    command: celery -A tradeproject beat -l info
-    volumes:
-      - .:/code
-    depends_on:
-      - db
-      - redis
       
 volumes:
   static_volume:
